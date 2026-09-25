@@ -16,7 +16,7 @@
 .field-input input,.field-input select,.field-input textarea,.toolbar input{width:100%;padding:10px 11px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink)}
 .field-input textarea{min-height:160px;resize:vertical;line-height:1.6}
 .import-layout{display:grid;grid-template-columns:1fr 1fr;gap:17px}
-.import-drop{border:1px dashed #9fc7c0;background:#fbfefd;border-radius:14px;padding:20px;text-align:center}
+.import-drop{display:block;width:100%;border:1px dashed #9fc7c0;background:#fbfefd;border-radius:14px;padding:24px 20px;text-align:center;cursor:pointer}
 .import-drop strong{display:block;font-size:16px;margin-bottom:7px}
 .import-drop small{display:block;color:var(--muted);line-height:1.7}
 .import-result{margin-top:16px}
@@ -335,17 +335,54 @@ function saveQr(){const box=document.querySelector('#qrFrame'),canvas=box.queryS
 function exportCsv(){if(!logs.length)return toast('暂无记录');const rows=[['时间','货物编号','货物名称','操作','状态变化','操作人'],...logs.map(l=>[l.time,l.id,l.name,l.action,l.change,l.operator])];const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download='智码仓_操作记录.csv';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 window.inbound=inbound;window.outbound=outbound;window.selectQr=selectQr;window.editProduct=editProduct;window.deleteProduct=deleteProduct;
 window.addEventListener('error',e=>console.error('页面运行错误：',e.error||e.message));
-document.addEventListener('DOMContentLoaded',()=>{document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));try{renderAll()}catch(e){console.error('初始化部分模块失败：',e);toast('部分模块初始化失败，但菜单仍可使用')}document.querySelector('#reset').onclick=reset;document.querySelector('#printQr').onclick=()=>window.print();document.querySelector('#saveQr').onclick=saveQr;document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');document.querySelectorAll('.scanmode').forEach(x=>x.classList.remove('active'));document.querySelector('#'+(b.dataset.mode==='camera'?'cameraMode':'uploadMode')).classList.add('active');if(b.dataset.mode!=='camera')stopCam()
-document.querySelector('#downloadTemplate').onclick=downloadProductTemplate;
-document.querySelector('#productCsvFile').onchange=async e=>{const f=e.target.files[0];if(!f)return;document.querySelector('#csvFileName').textContent=`已选择：${f.name}`;document.querySelector('#importText').value=await f.text()};
-document.querySelector('#importNow').onclick=()=>{const text=document.querySelector('#importText').value;if(!text.trim())return toast('请选择文件或粘贴 CSV 内容');const r=importProductsFromText(text,document.querySelector('#overwriteImport').checked);renderImportResult(r);renderBarcodeProducts();renderDashboard();toast(`导入完成：成功 ${r.success}，跳过 ${r.skip}，失败 ${r.fail}`)};
-document.querySelector('#addProduct').onclick=()=>openProductEditor();
-document.querySelector('#exportProducts').onclick=exportBarcodeProducts;
-document.querySelector('#cancelProduct').onclick=closeProductEditor;
-document.querySelector('#cancelProduct2').onclick=closeProductEditor;
-document.querySelector('#saveProduct').onclick=saveProductEditor;
-document.querySelector('#pmEan').oninput=updateProductBarcodePreview;
-document.querySelector('#productSearch').oninput=renderBarcodeProducts;
-});document.querySelector('#startCam').onclick=startCam;document.querySelector('#stopCam').onclick=stopCam;document.querySelector('#file').onchange=e=>{if(e.target.files[0])decodeFile(e.target.files[0])};document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>renderScanCargo(b.dataset.demo,payload(b.dataset.demo),'演示快捷扫码'));document.querySelector('#export').onclick=exportCsv;document.querySelector('#clear').onclick=()=>{if(confirm('确定清空操作记录吗？')){logs=[];save();renderLogs()}};window.addEventListener('beforeunload',stopCam)});
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>show(b.dataset.view));
+  document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>show(b.dataset.go));
+  try{renderAll()}catch(e){console.error('初始化部分模块失败：',e);toast('部分模块初始化失败，但菜单仍可使用')}
+
+  document.querySelector('#reset').onclick=reset;
+  document.querySelector('#printQr').onclick=()=>window.print();
+  document.querySelector('#saveQr').onclick=saveQr;
+
+  document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.scanmode').forEach(x=>x.classList.remove('active'));
+    document.querySelector('#'+(b.dataset.mode==='camera'?'cameraMode':'uploadMode')).classList.add('active');
+    if(b.dataset.mode!=='camera')stopCam();
+  });
+  document.querySelector('#startCam').onclick=startCam;
+  document.querySelector('#stopCam').onclick=stopCam;
+  document.querySelector('#file').onchange=e=>{if(e.target.files[0])decodeFile(e.target.files[0])};
+  document.querySelectorAll('[data-demo]').forEach(b=>b.onclick=()=>renderScanCargo(b.dataset.demo,payload(b.dataset.demo),'演示快捷扫码'));
+
+  document.querySelector('#export').onclick=exportCsv;
+  document.querySelector('#clear').onclick=()=>{if(confirm('确定清空操作记录吗？')){logs=[];save();renderLogs()}};
+
+  document.querySelector('#downloadTemplate').onclick=downloadProductTemplate;
+  document.querySelector('#productCsvFile').onchange=async e=>{
+    const f=e.target.files[0];if(!f)return;
+    document.querySelector('#csvFileName').textContent=`已选择：${f.name}`;
+    document.querySelector('#importText').value=await f.text();
+  };
+  document.querySelector('#importNow').onclick=()=>{
+    const text=document.querySelector('#importText').value;
+    if(!text.trim())return toast('请选择文件或粘贴 CSV 内容');
+    const r=importProductsFromText(text,document.querySelector('#overwriteImport').checked);
+    renderImportResult(r);renderBarcodeProducts();renderDashboard();
+    document.querySelector('#importResult')?.scrollIntoView({behavior:'smooth',block:'start'});
+    toast(`导入完成：成功 ${r.success}，跳过 ${r.skip}，失败 ${r.fail}`);
+  };
+
+  document.querySelector('#addProduct').onclick=()=>openProductEditor();
+  document.querySelector('#exportProducts').onclick=exportBarcodeProducts;
+  document.querySelector('#cancelProduct').onclick=closeProductEditor;
+  document.querySelector('#cancelProduct2').onclick=closeProductEditor;
+  document.querySelector('#saveProduct').onclick=saveProductEditor;
+  document.querySelector('#pmEan').oninput=updateProductBarcodePreview;
+  document.querySelector('#productSearch').oninput=renderBarcodeProducts;
+
+  window.addEventListener('beforeunload',stopCam);
+});
 </script>
 </body></html>
